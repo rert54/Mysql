@@ -305,3 +305,386 @@ having sum(sal)>9000;
 
 select count(comm), count(sal), count(*) -- count(*) 은 무조건 전체 레코드 수를 센다 즉 null도 센다
 from emp;
+
+-- 조인
+-- cross join
+use testdb;
+select *
+from emp cross join dept;
+-- 컬럼을 행으로 그냥 연결 시킨다
+-- natural join
+select *
+from emp natural join dept;
+-- 중복되는 컬럼을 기준으로 연결 시킨다. 첫번째 행으로 중복이나고 deptno이다
+
+select empno, ename, sal,dname
+from emp natural join dept;
+
+select empno, ename, sal,dname, emp.sal, dept.dname, dept.deptno
+from emp natural join dept;
+-- 테이블명.헤더명
+select empno, ename, sal,dname, emp.sal, dept.dname, dept.deptno
+from emp e natural join dept d; -- 조인시 별칭은 from에서 해야한다 여기선 e d고 as가 생략된 모습으로 해야한다
+
+-- using(공통컬럼)
+select *
+from emp inner join dept using(deptno);
+
+-- on 범용적
+select *
+from emp join dept on emp.deptno = dept.deptno; -- emp의 deptno와 dept테이블의deptno가 같은걸 찾는다
+
+select *
+from emp e join dept d on e.deptno = d.deptno;
+-- on절은 반드시 소속을 알려주어야 한다, 별칭사용가능
+
+-- non-equil 조인
+select *
+from emp e join salgrade s on e.sal between s.losal and s.hisal;
+
+-- 3개 조인
+
+
+-- emp와dept의 deptno를 공통 컬럼으로 연결 시키고 salgrade를 s라 별칭하고 emp의sal에 s의 losal hisal을 연결시킴
+select *
+from emp e join dept using(deptno)
+			join salgrade s ON  e.sal between s.losal and s.hisal;
+
+select *
+from emp e join dept d ON e.deptno = d.deptno
+			join salgrade s ON  e.sal between s.losal and s.hisal;
+            
+ -- 서브 쿼리
+ 
+select sal
+ from emp
+ where ename ='smith';
+select empno, ename,sal
+from emp
+where sal > 1000;
+-- 위 두 select문을 서브쿼리로 합칠 수 있다
+ select empno, ename,sal -- 메인쿼리
+ from emp
+ where sal > (select sal
+				from emp
+				where ename = 'smith');
+-- 괄호가 있는게 서브쿼리고 먼저실행되면 결과값을 이용하여 메인 쿼리가 실행된다	
+            
+-- ex1
+
+-- ex2 emp테이블에서 job이 MANAGER 인 사원의 최소급여보다 적은 급여를 받는 사원 정보(사원번호,이름,job,hiredate,sal)?
+select min(sal)
+from emp
+where job = 'manager'; -- MANAGER 인 사원의 최소 급여;
+
+select empno,ename,job,hiredate,sal
+from emp
+where sal < (select min(sal)
+			from emp
+			where job = 'MANAGER');
+ select empno,ename,job,hiredate,sal
+from emp
+where sal < ALL(select sal  -- < 단일 연산자 활용 최소값보다작은 < all과 같다
+			from emp
+			where job = 'MANAGER');           
+            
+            
+-- ex3 emp테이블에서 job이 MANAGER 인 사원의 최소급여보다 적은 급여를 받는 사원정보(사원번호, 이름, job,hiredate,
+select empno,ename,job,hiredate,sal
+from emp
+where sal > (select min(sal)
+			from emp
+			where job = 'MANAGER');
+            
+            select empno,ename,job,hiredate,sal
+from emp
+where sal > any (select sal -- > any 최소값보다 많은 any는 하나만 만족하면 된다
+			from emp
+			where job = 'MANAGER');
+            
+--  ex4. emp테이블에서 job이 MANAGER 인 사원의 최대급여보다 적은 급여를 받는 사원 정보(사원번호,이름,job,hiredate,sal)?
+select empno,ename,job,hiredate,sal
+from emp
+where sal < (select max(sal)
+			from emp
+			where job = 'MANAGER');
+            
+select empno,ename,job,hiredate,sal
+from emp
+where sal < any (select sal -- > any 최소값보다 많은 any는 하나만 만족하면 된다
+			from emp
+			where job = 'MANAGER');
+            
+
+
+-- ex5. emp테이블에서 job이 MANAGER 인 사원의 최대급여보다 많은 급여를 받는 사원 정보(사원번호,이름,job,hiredate,sal)?
+select empno,ename,job,hiredate,sal
+from emp
+where sal > (select max(sal)
+			from emp
+			where job = 'MANAGER');
+ select empno,ename,job,hiredate,sal
+from emp
+where sal > ALL(select sal  -- < 단일 연산자 활용
+			from emp
+			where job = 'MANAGER');  
+            
+use testdb;
+show variables like 'autocommit%'; 
+set autocommit=false;
+
+-- DML
+-- INSERT
+select * from dept;
+insert into dept (deptno,dname,loc)
+values ( 41, '인사과', '서울');
+
+insert into dept (deptno,dname,loc)
+values ( 41, '인사과', '서울');
+
+insert into dept (deptno,dname)
+values ( 42, '인사과', '서울'); -- 오류발생
+insert into dept (deptno,dname,loc)
+values ( 43, '인사과', null);
+
+insert into dept
+values ( 44, '인사과', null);
+
+
+insert into dept
+values ( 45, '인사과');-- 오류발생
+
+commit; 
+
+create table my_emp
+as
+select empno,ename,sal
+from emp
+where 1=2;
+
+insert into my_emp ( empno,ename,sal )
+select empno,ename,sal
+from emp;
+
+select*from my_emp;
+update my_emp
+set name='이순신', sal=100;
+rollback
+commit;
+
+update my_emp
+set ename='이순신', sal=100
+where empno=7369;
+rollback; -- 실습하고 데이터 원복을 위함
+
+delete from my_emp;
+rollback; -- 실습후 원복을 위함
+
+delete from my_emp
+where empno=7369;
+rollback; -- 실습후 원복을 위함
+
+-- ============실습 문제1
+select empno, ename, EMPNO,dname
+from emp natural join dept
+ORDER BY ENAME;
+
+-- ============실습 문제2
+select empno, ename, SAL,DEPTNO,DNAME
+from emp natural join dept
+ORDER BY SAL desc;
+
+-- ============실습 문제3
+select empno, ename, SAL,DEPTNO,DNAME
+from emp natural join dept 
+where sal > 2500 and job = 'MANAGER'
+ORDER BY empno;
+
+-- ============실습 문제4
+ select empno, ename, SAL,grade
+from  emp e join salgrade s ON e.sal BETWEEN s.losal AND s.hisal
+where grade = 4
+order by sal desc;	
+
+-- ============실습 문제5
+
+-- DDL 오토 커밋된다
+
+create table IF NOT EXISTS board
+(
+	num int primary key auto_increment,
+	tile varchar(100) not null,
+	author varchar(10) NOT NULL,
+	CONTENT VARCHAR(500) NOT NULL,
+	writeday datetime DEFAULT now(),
+	redcnt int default 0
+	);
+    
+insert into board (tile, author, CONTENT) values ('테스트','홍길동','내용무');
+select * from board;
+
+create table IF NOT EXISTS board2
+(
+	num int primary key auto_increment,
+	title varchar(100) not null,
+	author varchar(10) NOT NULL,
+	CONTENT VARCHAR(500) NOT NULL,
+	writeday datetime DEFAULT now(),
+    gender char(4) constraint check (gender in ('M','F')),
+	readcnt int default 0
+	);
+insert into board2 (title,author,content,gender)
+values ('테스트','홍길동','내용물','M');
+insert into board2 (title,author,content,gender)
+values ('테스트','홍길동','내용물','F');
+insert into board2 (title,author,content,gender)
+values ('테스트','홍길동','내용물','남'); -- 오류발생 m or f만으로 지정해서
+select * from board2;
+
+create table IF NOT EXISTS board3
+(
+	num int auto_increment, -- 글번호
+	title varchar(100) not null, -- 타이틀
+	author varchar(10),
+	CONTENT VARCHAR(500) not null, -- 글
+	writeday datetime DEFAULT now(),
+    gender char(4),
+	readcnt int default 0, -- 조회수
+	
+	Constraint primary key(num), -- 제약조건 설정
+	Constraint unique(author), -- autorh에 제약 조건 unique
+	Constraint check (gender in('M','F'))
+	);
+insert into board3 (title,author,content,gender)
+values ('테스트','홍길동','내용물','F');
+select * from board3;
+
+create table IF NOT EXISTS board4
+(
+	num int auto_increment,
+	title varchar(100), 
+	author varchar(10),
+	CONTENT VARCHAR(500),
+	writeday datetime DEFAULT now(), 
+	gender char(4),
+	readcnt int default 0
+);
+alter table board4
+modify title varchar(100) not null;
+
+alter table board4
+modify content varchar(100) not null;
+
+alter table board4
+add constraint primary key(num);
+
+alter table board4
+add constraint unique(author);
+
+alter table board4
+add constraint check (gender in('M','F'));
+
+create table IF NOT EXISTS board5
+(
+	num int,
+	title varchar(100), 
+	author varchar(10),
+	CONTENT VARCHAR(500),
+	writeday datetime DEFAULT now(), 
+	gender char(4),
+	readcnt int default 0
+);
+alter table board5
+modify title varchar(100) not null;
+
+alter table board5
+modify content varchar(100) not null;
+alter table board5
+modify num INT auto_increment,
+add constraint primary key(num);
+
+alter table board5
+add constraint unique(author);
+
+alter table board5
+add constraint check (gender in('M','F'));
+select * from board5;
+
+create table master1
+( no int PRIMARY KEY,
+	name varchar(10) NOT NULL);
+
+insert into master1 (no,name) values (1,'aa1');
+insert into master1 (no,name) values (2,'aa2');
+insert into master1 (no,name) values (3,'aa3');
+commit;
+
+create table slave1
+( num int PRIMARY KEY,
+	ename VARCHAR(10) NOT NULL,
+	no int,
+	
+	constraint foreign key(no) references master1(no) on delete cascade 
+    );
+
+insert into slave1 (num,ename,no) values (10,'slvae1',1);
+insert into slave1 (num,ename,no) values (20,'slvae2',2);
+insert into slave1 (num,ename,no) values (30,'slvae3',3);
+insert into slave1 (num,ename,no) values (40,'slvae4',4); -- 에러발생
+insert into slave1 (num,ename,no) values (50,'slvae5',null);
+commit;
+select * from master1;
+select * from slave1;
+delete from master1 where no = 1;
+
+create table master2
+( no int PRIMARY KEY,
+name varchar(10) NOT NULL);
+
+insert into master2 (no,name) values (1,'aa1');
+insert into master2 (no,name) values (2,'aa2');
+insert into master2 (no,name) values (3,'aa3');
+commit;
+
+create table slave2
+( num int PRIMARY KEY,
+	ename VARCHAR(10) NOT NULL,
+	no int,
+	
+	CONSTRAINT FOREIGN KEY(no) REFERENCES master2(no) ON DELETE SET NULL
+);
+
+insert into slave2 (num,ename,no) values (10,'slvae1',2);
+insert into slave2 (num,ename,no) values (20,'slvae2',2);
+insert into slave2 (num,ename,no) values (30,'slvae3',3);
+insert into slave2 (num,ename,no) values (50,'slvae5',null);
+commit;
+select * from master2;
+select * from slave2;
+delete from master2 where no = 1;
+
+drop table if exists board,board2,board3;
+
+truncate table my_emp;
+select * from my_emp;
+
+create table if not exists my_dept
+( no int primary key,
+name varchar(10)
+);
+-- 컬럼 추가
+alter table my_dept
+add column adress varchar(20);
+-- 컬럼 변경 ( 크기 변경 )
+alter table my_dept
+modify adress varchar(50);
+modify adress varchar(10);
+-- 컬럼 이름 변경
+alter table my_dept
+RENAME COLUMN address To addr;
+-- 컬럼삭제
+alter table my_dept
+drop name;
+
+select * from emp;
+select * from emp limit 4;
